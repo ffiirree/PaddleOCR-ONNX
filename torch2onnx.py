@@ -6,6 +6,8 @@ import torch.onnx
 
 mobilenetv3s = torchvision.models.mobilenet_v3_small(pretrained=True).eval()
 
+print(mobilenetv3s)
+
 # water ouzel: target = 20
 input = TransF.to_tensor(Image.open("water_ouzel.jpeg").convert('RGB'))
 input = TransF.normalize(input, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]).unsqueeze_(0)
@@ -24,6 +26,8 @@ import onnxruntime as ort
 
 onnx_model = onnx.load('mobilenetv3s.onnx')
 onnx.checker.check_model(onnx_model)
+
+print(onnx.helper.printable_graph(onnx_model.graph))
 
 ort_sess = ort.InferenceSession('mobilenetv3s.onnx')
 
