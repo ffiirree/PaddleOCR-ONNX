@@ -1,0 +1,9 @@
+*.onnx
+__pycache__/
+.vs
+.idea
+.vscode
+out
+build/
+eggs/
+.env
