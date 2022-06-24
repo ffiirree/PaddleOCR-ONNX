@@ -1,8 +1,26 @@
 #include <onnxruntime_cxx_api.h>
 #include <assert.h>
+#include <opencv2/opencv.hpp>
 
 int main(int argc, char * argv[])
 {
+    cv::Mat image;
+    cv::imread("../water_ouzel.jpeg").convertTo(image, CV_32F);
+
+    printf("%f, %f\n", *(float *)image.data, *(((float *)image.data)+1));
+
+    image = (image / 255.0f - cv::Scalar{0.485, 0.456, 0.406}) / cv::Scalar{0.229, 0.224, 0.225};
+
+    printf("%f, %f\n", *(float *)image.data, *(((float *)image.data)+1));
+    
+
+    cv::Mat img_channels[3];
+	cv::split(image, img_channels);
+    
+    std::memcpy(image.data, img_channels[0].data, img_channels[2].rows * img_channels[0].cols * 4);
+    std::memcpy(image.data + img_channels[0].rows * img_channels[0].cols * 4, img_channels[1].data, img_channels[0].rows * img_channels[0].cols * 4);
+    std::memcpy(image.data + img_channels[0].rows * img_channels[0].cols * 4 * 2, img_channels[0].data, img_channels[0].rows * img_channels[0].cols * 4);
+
     Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "test");
     const auto& api = Ort::GetApi();
     OrtTensorRTProviderOptionsV2* tensorrt_options;
@@ -56,16 +74,16 @@ int main(int argc, char * argv[])
     size_t input_tensor_size = 224 * 224 * 3;  // simplify ... using known dim values to calculate size
                                                 // use OrtGetTensorShapeElementCount() to get official size!
 
-    std::vector<float> input_tensor_values(input_tensor_size);
+    // std::vector<float> input_tensor_values(input_tensor_size);
     std::vector<const char*> output_node_names = {"output"};
 
     // initialize input data with values in [0.0, 1.0]
-    for (unsigned int i = 0; i < input_tensor_size; i++)
-        input_tensor_values[i] = (float)i / (input_tensor_size + 1);
+    // for (unsigned int i = 0; i < input_tensor_size; i++)
+        // input_tensor_values[i] = (float)i / (input_tensor_size + 1);
 
     // create input tensor object from data values
     auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-    Ort::Value input_tensor = Ort::Value::CreateTensor<float>(memory_info, input_tensor_values.data(), input_tensor_size, input_node_dims.data(), 4);
+    Ort::Value input_tensor = Ort::Value::CreateTensor<float>(memory_info, (float*)image.data, input_tensor_size, input_node_dims.data(), 4);
     assert(input_tensor.IsTensor());
 
     // score model & input tensor, get back output tensor
@@ -79,6 +97,9 @@ int main(int argc, char * argv[])
     // score the model, and print scores for first 5 classes
     for (int i = 0; i < 5; i++)
         printf("Score for class [%d] =  %f\n", i, floatarr[i]);
+
+    auto result_ = std::distance(floatarr, std::max_element(floatarr, floatarr + 999));
+    printf("%ld\n", result_);
 
     // Results should be as below...
     // Score for class[0] = 0.000045
