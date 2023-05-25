@@ -5,7 +5,7 @@
 int main(int argc, char * argv[])
 {
     cv::Mat image;
-    cv::imread("../water_ouzel.jpeg").convertTo(image, CV_32F, 1 / 255.0f);
+    cv::imread(argv[1]).convertTo(image, CV_32F, 1 / 255.0f);
 
     image = (image - cv::Scalar{ 0.406, 0.456, 0.485 }) / cv::Scalar{ 0.225, 0.224, 0.229 };
 
@@ -18,7 +18,6 @@ int main(int argc, char * argv[])
 
     Ort::Env env;
     Ort::Session session(env, "../mobilenetv3s.onnx", Ort::SessionOptions{nullptr});
-
 
     size_t input_tensor_size = 224 * 224 * 3;
     std::vector<int64_t> input_shape{ 1, 3, 224, 224 };
